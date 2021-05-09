@@ -1,6 +1,8 @@
 package project;
 
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import peersim.config.Configuration;
 import peersim.core.CommonState;
 import peersim.core.Network;
@@ -11,13 +13,11 @@ import project.protocol.Packet;
 import project.protocol.Packet.DiscoveryPacket;
 import project.protocol.Packet.MessagePacket;
 import project.protocol.Packet.SwitchNeighborPacket;
-import project.protocol.WelcomePacket;
+import project.protocol.Packet.WelcomePacket;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static project.Utils.getNodeId;
 import static project.protocol.Packet.SwitchNeighborPacket.LEFT;
@@ -71,9 +71,11 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      */
     private final UUID id = UUID.randomUUID();
 
-    private final Logger logger = Logger.getLogger("Transport " + id);
+    // Initial logger uses the UUID to bez identifiable, will then be changed to the node index
+    private Logger logger = LoggerFactory.getLogger(String.format("Transport %016x", id.getMostSignificantBits()));
 
     public Transport(String prefix) {
+
         this.prefix = prefix;
         this.targetPid = Configuration.getPid(prefix + ".target");
 //        this.applicationPid = Configuration.getPid("application");
@@ -87,6 +89,10 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         EDSimulator.add(getLatency(src, dest), packet, dest, pid);
     }
 
+    public void send(Node dest, Packet packet) {
+        this.send(this.localNode, dest, packet, this.targetPid);
+    }
+
     /**
      * Packet received
      * @param node the local node
@@ -95,7 +101,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      */
     @Override
     public void processEvent(Node node, int pid, Object event) {
-        //logger.info("Received packet: " + event);
+        logger.trace("Received packet: " + event);
         if (event instanceof DiscoveryPacket) this.onDiscoverPacket((DiscoveryPacket) event);
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
@@ -124,7 +130,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
             this.send(this.localNode, newNode,welcomePacket, this.targetPid);
             this.right = newNode;
             this.left = newNode;
-            logger.log(Level.INFO, "Joining {} to form a ring of size 2", packet.getAddress());
+            logger.debug("Joining {} to form a ring of size 2", packet.getAddress());
         }
         else if (packet.getNodeId().compareTo(this.id) > 0) { // packet.nodeId > this.id
             // the sender has a greater id than the local node
@@ -141,17 +147,23 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
                 // the node should be placed between the right and the local node
 
                 // send back neighbors address to the node that joined the cluster
+                this.logger.debug("Welcoming node {} ({}) as my new right node", packet.getAddress(), packet.getNodeId());
                 WelcomePacket welcomePacket = new WelcomePacket(this.localNode.getIndex(), this.right.getIndex());
-                this.send(this.localNode, newNode,welcomePacket, this.targetPid);
+                this.send(newNode, welcomePacket);
 
                 // Notify the right node that his left node has changed
+                this.logger.debug("Notifying node {} ({}) of their new left node", this.right.getIndex(), getNodeId(this.right));
                 SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(LEFT, packet.getAddress());
-                this.send(this.localNode, this.right, switchNeighbor, this.targetPid);
+                this.send(this.right, switchNeighbor);
                 this.right = newNode;
             } else {
                 // the node should be placed after the right node
                 // we follow the packet to the next node in the ring
-                this.send(this.localNode,this.right,  packet, this.targetPid);
+                this.logger.trace(
+                        "Following discovery of {} ({}) to {} ({})",
+                        packet.getAddress(), packet.getNodeId(), this.right.getIndex(), getNodeId(this.right)
+                );
+                this.send(this.right, packet);
             }
         }
 
@@ -170,17 +182,23 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
                 // the node should be placed between the left and the local node
 
                 // send back neighbors address to the node that joined the cluster
+                this.logger.debug("Welcoming node {} ({}) as my new left node", packet.getAddress(), packet.getNodeId());
                 WelcomePacket welcomePacket = new WelcomePacket(this.left.getIndex(), this.localNode.getIndex());
-                this.send(this.localNode,Network.get(packet.getAddress()) ,welcomePacket, this.targetPid);
+                this.send(newNode, welcomePacket);
 
                 // Notify the left node that his right node has changed
+                this.logger.debug("Notifying node {} ({}) of their new right node", this.left.getIndex(), getNodeId(this.left));
                 SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(RIGHT, packet.getAddress());
-                this.send(this.localNode,this.left ,switchNeighbor,this.targetPid);
-                this.left = Network.get(packet.getAddress());
+                this.send(this.left, switchNeighbor);
+                this.left = newNode;
             } else {
                 // the node should be placed after the left node
                 // we follow the packet to the next node in the ring
-                this.send(this.localNode,this.left ,packet,this.targetPid);
+                this.logger.trace(
+                        "Following discovery of {} ({}) to {} ({})",
+                        packet.getAddress(), packet.getNodeId(), this.left.getIndex(), getNodeId(this.left)
+                );
+                this.send(this.left, packet);
             }
         }
     }
@@ -190,10 +208,10 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      * @param packet the packet received
      */
     private void onWelcomePacket(WelcomePacket packet) {
-        this.left = Network.get(packet.left);
-        this.right = Network.get(packet.right);
+        this.left = Network.get(packet.getLeft());
+        this.right = Network.get(packet.getRight());
         this.idle = false;
-        logger.info(this.localNode.toString());
+        this.logger.debug("Awaken and the ring (left={}, right={})", packet.getLeft(), packet.getRight());
     }
 
     /**
@@ -201,8 +219,21 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      * @param packet the packet received
      */
     private void onSwitchNeighborPacket(SwitchNeighborPacket packet) {
-        if (packet.isLeft()) this.left = Network.get(packet.getAddress());
-        else this.right = Network.get(packet.getAddress());
+        if (packet.isLeft()) {
+            logger.debug(
+                    "Switching left neighbor from {} to {}",
+                    this.left == null ? "null" : this.left.getIndex(),
+                    packet.getAddress()
+            );
+            this.left = Network.get(packet.getAddress());
+        } else {
+            logger.debug(
+                    "Switching right neighbor from {} to {}",
+                    this.right == null ? "null" : this.right.getIndex(),
+                    packet.getAddress()
+            );
+            this.right = Network.get(packet.getAddress());
+        }
     }
 
     /**
@@ -210,10 +241,12 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      */
     public void awake(Node localNode) {
         this.localNode = localNode;
-        Node target = DHTProject.getRandomAwakenNode();
+        this.updateLogger();
 
+        this.logger.debug("Starting discovery, waiting for neighbors");
+        Node target = DHTProject.getRandomAwakenNode();
         Packet packet = new DiscoveryPacket(localNode.getIndex(), this.id);
-        this.send(this.localNode,target,packet, this.targetPid);
+        this.send(target, packet);
     }
 
     /**
@@ -224,6 +257,16 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         this.left = localNode;
         this.right = localNode;
         this.idle = false;
+        this.updateLogger();
+
+        this.logger.info("Awaken as initial node");
+    }
+
+    private void updateLogger() {
+        this.logger = LoggerFactory.getLogger(String.format(
+                "Transport %016x (Node %d)",
+                this.id.getMostSignificantBits(), this.localNode.getIndex()
+        ));
     }
 
     @Override

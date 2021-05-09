@@ -1,16 +1,15 @@
 package project;
 
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
-import project.protocol.Packet;
-
+import project.protocol.DataPacket;
 
 import java.util.stream.IntStream;
 
-@Log
+@Slf4j(topic = "Initializer")
 public class DHTProject implements Control {
     private static int TRANSPORT_PID = -1;
 
