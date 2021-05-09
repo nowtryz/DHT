@@ -59,7 +59,7 @@ public class Transport implements EDProtocol {
 
     public Transport(String prefix) {
         this.prefix = prefix;
-        this.targetPid = Configuration.getPid("target");
+        this.targetPid = Configuration.getPid(prefix + ".target");
 //        this.applicationPid = Configuration.getPid("application");
         this.applicationPid = 0; // not used for the moment
     }
