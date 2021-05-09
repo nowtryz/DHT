@@ -167,6 +167,8 @@ public class Transport implements EDProtocol {
         this.left = Network.get(packet.left);
         this.right = Network.get(packet.right);
         this.iddle = false;
+        System.out.println("The new left node is : "+left);
+        System.out.println("The new right node is : "+right);
     }
 
     /**
