@@ -2,8 +2,10 @@ package project;
 
 import peersim.config.Configuration;
 import peersim.core.Control;
+import peersim.core.GeneralNode;
 import peersim.core.Network;
 import peersim.core.Node;
+import project.protocol.MessagePacket;
 
 import java.util.stream.IntStream;
 
@@ -38,10 +40,10 @@ public class DHTProject implements Control {
     public boolean execute() {
         System.out.println("Starting simulation");
 
-        if (Network.size() > 1) {
+        
+        if (Network.size() < 2) {
             // We want to network to have at least a size of 2 in order to only wake up the first node.
-            // Other nodes will be added later on
-            throw new IllegalStateException("The initial size of the network must be 1");
+            throw new IllegalStateException("The size of the network must be greater than 2");
         }
 
         // Initialize the ring by waking up the first node
@@ -53,13 +55,15 @@ public class DHTProject implements Control {
         // Sequentially awake other nodes
         for (int i = 1; i < Network.size(); i++) {
             System.out.println("Waking up node " + i);
+           
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
             transport.awake(node);
+            //transport.send(new MessagePacket("Bonjour"), initialNode);
         }
 
 
-        System.out.println("done");
+        System.out.println("Done");
 
 
         return false;

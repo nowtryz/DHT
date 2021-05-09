@@ -5,10 +5,7 @@ import peersim.core.Network;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.edsim.EDSimulator;
-import project.protocol.DiscoveryPacket;
-import project.protocol.SwitchNeighborPacket;
-import project.protocol.WelcomePacket;
-import project.protocol.Packet;
+import project.protocol.*;
 
 import java.util.UUID;
 
@@ -84,7 +81,16 @@ public class Transport implements EDProtocol {
         if (event instanceof DiscoveryPacket) this.onDiscoverPacket((DiscoveryPacket) event);
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
+        else if (event instanceof MessagePacket) this.onMessagePacket((MessagePacket) event);
         else throw new IllegalArgumentException("Event not recognized: " + event);
+    }
+
+    /**
+     * A new message is received
+     * @param event
+     */
+    private void onMessagePacket(MessagePacket event) {
+        System.out.println(event.message);
     }
 
     /**
@@ -100,6 +106,8 @@ public class Transport implements EDProtocol {
             this.send(welcomePacket, newNode);
             this.right = newNode;
             this.left = newNode;
+            System.out.println("NE DEVRAIT APPARAITRE QU UNE FOIS !!!!");
+
         }
 
         if (packet.nodeId.compareTo(this.id) > 0) { // packet.nodeId > this.id
@@ -147,7 +155,7 @@ public class Transport implements EDProtocol {
                 WelcomePacket welcomePacket = new WelcomePacket(this.left.getIndex(), this.localNode.getIndex());
                 this.send(welcomePacket, Network.get(packet.address));
 
-                // Notify the right node that his left node has changed
+                // Notify the left node that his right node has changed
                 SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(RIGHT, packet.address);
                 this.send(switchNeighbor, this.left);
                 this.left = Network.get(packet.address);
@@ -167,6 +175,8 @@ public class Transport implements EDProtocol {
         this.left = Network.get(packet.left);
         this.right = Network.get(packet.right);
         this.iddle = false;
+        System.out.println("The new left node is : "+left);
+        System.out.println("The new right node is : "+right);
     }
 
     /**
@@ -183,6 +193,7 @@ public class Transport implements EDProtocol {
      */
     public void awake(Node localNode) {
         this.localNode = localNode;
+        this.iddle=false;
         Node target = DHTProject.getRandomAwakenNode();
 
         Packet packet = new DiscoveryPacket(localNode.getIndex(), this.id);
