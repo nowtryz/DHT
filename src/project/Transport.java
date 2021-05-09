@@ -147,7 +147,7 @@ public class Transport implements EDProtocol {
                 WelcomePacket welcomePacket = new WelcomePacket(this.left.getIndex(), this.localNode.getIndex());
                 this.send(welcomePacket, Network.get(packet.address));
 
-                // Notify the right node that his left node has changed
+                // Notify the left node that his right node has changed
                 SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(RIGHT, packet.address);
                 this.send(switchNeighbor, this.left);
                 this.left = Network.get(packet.address);
