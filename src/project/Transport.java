@@ -2,6 +2,7 @@ package project;
 
 import lombok.Getter;
 import peersim.config.Configuration;
+import peersim.core.CommonState;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
@@ -12,6 +13,8 @@ import project.protocol.Packet.MessagePacket;
 import project.protocol.Packet.SwitchNeighborPacket;
 import project.protocol.WelcomePacket;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +24,7 @@ import static project.protocol.Packet.SwitchNeighborPacket.LEFT;
 import static project.protocol.Packet.SwitchNeighborPacket.RIGHT;
 
 @Getter
-public class Transport implements EDProtocol {
+public class Transport implements EDProtocol, peersim.transport.Transport {
     /**
      * The prefix of this layer in the configuration file
      */
@@ -57,6 +60,12 @@ public class Transport implements EDProtocol {
      */
     private Node right = null;
 
+
+    /**
+     * Stocked data on the node
+     */
+    private HashMap<Integer,String> datas = new HashMap<>();
+
     /**
      * The id of the current node. Randomly generated
      */
@@ -71,13 +80,11 @@ public class Transport implements EDProtocol {
         this.applicationPid = 0; // not used for the moment
     }
 
-    /**
-     * Send a packet to another node
-     * @param packet the packet to send
-     * @param target the node we want to send the packet to
-     */
-    public void send(Packet packet, Node target) {
-        EDSimulator.add(0, packet, target, this.targetPid);
+
+
+    @Override
+    public void send(Node src, Node dest, Object packet, int pid) {
+        EDSimulator.add(getLatency(src, dest), packet, dest, pid);
     }
 
     /**
@@ -88,7 +95,7 @@ public class Transport implements EDProtocol {
      */
     @Override
     public void processEvent(Node node, int pid, Object event) {
-        logger.info("Received packet: " + event);
+        //logger.info("Received packet: " + event);
         if (event instanceof DiscoveryPacket) this.onDiscoverPacket((DiscoveryPacket) event);
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
@@ -114,12 +121,11 @@ public class Transport implements EDProtocol {
         // are we the initial node?
         if (this.left.equals(this.right) && getNodeId(this.left).equals(this.id)) {
             WelcomePacket welcomePacket = new WelcomePacket(this.localNode.getIndex(), this.localNode.getIndex());
-            this.send(welcomePacket, newNode);
+            this.send(this.localNode, newNode,welcomePacket, this.targetPid);
             this.right = newNode;
             this.left = newNode;
             logger.log(Level.INFO, "Joining {} to form a ring of size 2", packet.getAddress());
         }
-
         else if (packet.getNodeId().compareTo(this.id) > 0) { // packet.nodeId > this.id
             // the sender has a greater id than the local node
             // should be on the right
@@ -136,16 +142,16 @@ public class Transport implements EDProtocol {
 
                 // send back neighbors address to the node that joined the cluster
                 WelcomePacket welcomePacket = new WelcomePacket(this.localNode.getIndex(), this.right.getIndex());
-                this.send(welcomePacket, newNode);
+                this.send(this.localNode, newNode,welcomePacket, this.targetPid);
 
                 // Notify the right node that his left node has changed
                 SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(LEFT, packet.getAddress());
-                this.send(switchNeighbor, this.right);
+                this.send(this.localNode, this.right, switchNeighbor, this.targetPid);
                 this.right = newNode;
             } else {
                 // the node should be placed after the right node
                 // we follow the packet to the next node in the ring
-                this.send(packet, this.right);
+                this.send(this.localNode,this.right,  packet, this.targetPid);
             }
         }
 
@@ -165,16 +171,16 @@ public class Transport implements EDProtocol {
 
                 // send back neighbors address to the node that joined the cluster
                 WelcomePacket welcomePacket = new WelcomePacket(this.left.getIndex(), this.localNode.getIndex());
-                this.send(welcomePacket, Network.get(packet.getAddress()));
+                this.send(this.localNode,Network.get(packet.getAddress()) ,welcomePacket, this.targetPid);
 
                 // Notify the left node that his right node has changed
                 SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(RIGHT, packet.getAddress());
-                this.send(switchNeighbor, this.left);
+                this.send(this.localNode,this.left ,switchNeighbor,this.targetPid);
                 this.left = Network.get(packet.getAddress());
             } else {
                 // the node should be placed after the left node
                 // we follow the packet to the next node in the ring
-                this.send(packet, this.left);
+                this.send(this.localNode,this.left ,packet,this.targetPid);
             }
         }
     }
@@ -187,8 +193,7 @@ public class Transport implements EDProtocol {
         this.left = Network.get(packet.left);
         this.right = Network.get(packet.right);
         this.idle = false;
-        System.out.println("The new left node is : "+left);
-        System.out.println("The new right node is : "+right);
+        logger.info(this.localNode.toString());
     }
 
     /**
@@ -208,7 +213,7 @@ public class Transport implements EDProtocol {
         Node target = DHTProject.getRandomAwakenNode();
 
         Packet packet = new DiscoveryPacket(localNode.getIndex(), this.id);
-        this.send(packet, target);
+        this.send(this.localNode,target,packet, this.targetPid);
     }
 
     /**
@@ -233,5 +238,14 @@ public class Transport implements EDProtocol {
                 "left=" + (this.isIdle() ? "null" : this.getLeft().getIndex()) + ", " +
                 "right=" + (this.isIdle() ? "null" : this.getRight().getIndex()) + ", " +
                 "id=" + this.getId() + ")";
+    }
+
+    @Override
+    public long getLatency(Node src, Node dest) {
+        long min = Configuration.getInt(prefix + ".mindelay");
+        long max = Configuration.getInt(prefix + ".maxdelay");
+        long range = max-min;
+
+        return (range==1?min:min + CommonState.r.nextLong(range));
     }
 }

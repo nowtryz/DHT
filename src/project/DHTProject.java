@@ -5,6 +5,8 @@ import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
+import project.protocol.Packet;
+
 
 import java.util.stream.IntStream;
 
@@ -59,9 +61,14 @@ public class DHTProject implements Control {
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
             transport.awake(node);
-            //transport.send(new MessagePacket("Bonjour"), initialNode);
+            //transport.send(new Packet.MessagePacket("Bonjour"), initialNode);
             log.info("bootstrapped " + transport);
         }
+
+        // Data creation
+        DataPacket dp = new DataPacket.Data(5);
+
+
 
 
         log.info("Done");
