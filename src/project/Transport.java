@@ -193,7 +193,6 @@ public class Transport implements EDProtocol {
      */
     public void awake(Node localNode) {
         this.localNode = localNode;
-        this.iddle=false;
         Node target = DHTProject.getRandomAwakenNode();
 
         Packet packet = new DiscoveryPacket(localNode.getIndex(), this.id);

@@ -19,7 +19,6 @@
 package peersim.edsim;
 
 import peersim.core.*;
-import peersim.cdsim.CDProtocol;
 
 
 /**
@@ -61,7 +60,7 @@ public NextCycleEvent(String n) {}
 * on which you can perform optional deep cloning operations (arrays, etc).
 */
 public Object clone() throws CloneNotSupportedException {
-	
+
 	return super.clone();
 }
 
@@ -84,7 +83,7 @@ public final void execute() {
 	Node node = CommonState.getNode();
 	CDProtocol cdp = (CDProtocol)node.getProtocol(pid);
 	cdp.nextCycle(node,pid);
-	
+
 	long delay = nextDelay(CDScheduler.sch[pid].step);
 	if( CommonState.getTime()+delay < CDScheduler.sch[pid].until )
 		EDSimulator.add(delay, this, node, pid);
@@ -100,7 +99,7 @@ public final void execute() {
 * (as set in the config file).
 */
 protected long nextDelay(long step) {
-	
+
 	return step;
 }
 

@@ -13,7 +13,7 @@ public class DHTProject implements Control {
     private static int TRANSPORT_PID = -1;
 
     public DHTProject(String prefix) {
-        System.out.println("Creating initializer" + prefix);
+        System.out.println("Creating initializer " + prefix);
         TRANSPORT_PID = Configuration.getPid(prefix + ".transport");
     }
 
@@ -40,7 +40,7 @@ public class DHTProject implements Control {
     public boolean execute() {
         System.out.println("Starting simulation");
 
-        
+
         if (Network.size() < 2) {
             // We want to network to have at least a size of 2 in order to only wake up the first node.
             throw new IllegalStateException("The size of the network must be greater than 2");
@@ -55,7 +55,7 @@ public class DHTProject implements Control {
         // Sequentially awake other nodes
         for (int i = 1; i < Network.size(); i++) {
             System.out.println("Waking up node " + i);
-           
+
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
             transport.awake(node);

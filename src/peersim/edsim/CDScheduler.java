@@ -19,7 +19,6 @@
 package peersim.edsim;
 
 import peersim.core.*;
-import peersim.cdsim.CDProtocol;
 import peersim.config.*;
 import peersim.dynamics.NodeInitializer;
 
@@ -125,7 +124,7 @@ public CDScheduler(String n) {
 			throw new IllegalParameterException(n+"."+PAR_PROTOCOL,
 				"Only CDProtocols are accepted here");
 		}
-	
+
 		nce[i] = (NextCycleEvent)
 			Configuration.getInstance(n+"."+PAR_NEXTC,
 			new NextCycleEvent(null));
@@ -148,12 +147,12 @@ public CDScheduler(String n) {
  * @see #initialize
 */
 public boolean execute() {
-	
+
 	for(int i=0; i<Network.size(); ++i)
 	{
 		initialize(Network.get(i));
 	}
-	
+
 	return false;
 }
 
@@ -187,14 +186,14 @@ public void initialize(Node n) {
 * and should be fixed. When fixed, the final comment can be removed from the
 * docs.
 */
-	
+
 	final long time = CommonState.getTime();
 	for(int i=0; i<pid.length; ++i)
 	{
 		Object nceclone=null;
 		try { nceclone = nce[i].clone(); }
 		catch(CloneNotSupportedException e) {} //cannot possibly happen
-		
+
 		final long delay = firstDelay(sch[pid[i]].step);
 		final long nexttime = Math.max(time,sch[pid[i]].from)+delay;
 		if( nexttime < sch[pid[i]].until )
@@ -213,7 +212,7 @@ public void initialize(Node n) {
 * for which this method is called
 */
 protected long firstDelay(long cyclelength) {
-	
+
 	if(randstart)
 		return CommonState.r.nextLong(cyclelength);
 	else
