@@ -1,19 +1,19 @@
 package project;
 
+import lombok.extern.java.Log;
 import peersim.config.Configuration;
 import peersim.core.Control;
-import peersim.core.GeneralNode;
 import peersim.core.Network;
 import peersim.core.Node;
-import project.protocol.MessagePacket;
 
 import java.util.stream.IntStream;
 
+@Log
 public class DHTProject implements Control {
     private static int TRANSPORT_PID = -1;
 
     public DHTProject(String prefix) {
-        System.out.println("Creating initializer " + prefix);
+        log.info("Creating initializer " + prefix);
         TRANSPORT_PID = Configuration.getPid(prefix + ".transport");
     }
 
@@ -30,7 +30,7 @@ public class DHTProject implements Control {
     public static Node getRandomAwakenNode() {
         return IntStream.range(0, Network.size())
                 .mapToObj(Network::get)
-                .filter(node -> !((Transport) node.getProtocol(getTransportPid())).isIddle())
+                .filter(node -> !((Transport) node.getProtocol(getTransportPid())).isIdle())
                 // this should be random
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Unable to find any awaken node"));
@@ -38,7 +38,7 @@ public class DHTProject implements Control {
 
     @Override
     public boolean execute() {
-        System.out.println("Starting simulation");
+        log.info("Starting simulation");
 
 
         if (Network.size() < 2) {
@@ -47,23 +47,24 @@ public class DHTProject implements Control {
         }
 
         // Initialize the ring by waking up the first node
-        System.out.println("Initializing first node");
+        log.info("Initializing first node");
         Node initialNode = Network.get(0);
         Transport initialTransport = (Transport) initialNode.getProtocol(TRANSPORT_PID);
         initialTransport.awakeAsInitialNode(initialNode);
 
         // Sequentially awake other nodes
         for (int i = 1; i < Network.size(); i++) {
-            System.out.println("Waking up node " + i);
+            log.info("Waking up node " + i);
 
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
             transport.awake(node);
             //transport.send(new MessagePacket("Bonjour"), initialNode);
+            log.info("bootstrapped " + transport);
         }
 
 
-        System.out.println("Done");
+        log.info("Done");
 
 
         return false;

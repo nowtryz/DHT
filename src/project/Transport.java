@@ -1,18 +1,26 @@
 package project;
 
+import lombok.Getter;
 import peersim.config.Configuration;
 import peersim.core.Network;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.edsim.EDSimulator;
-import project.protocol.*;
+import project.protocol.Packet;
+import project.protocol.Packet.DiscoveryPacket;
+import project.protocol.Packet.MessagePacket;
+import project.protocol.Packet.SwitchNeighborPacket;
+import project.protocol.WelcomePacket;
 
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static project.Utils.getNodeId;
-import static project.protocol.SwitchNeighborPacket.LEFT;
-import static project.protocol.SwitchNeighborPacket.RIGHT;
+import static project.protocol.Packet.SwitchNeighborPacket.LEFT;
+import static project.protocol.Packet.SwitchNeighborPacket.RIGHT;
 
+@Getter
 public class Transport implements EDProtocol {
     /**
      * The prefix of this layer in the configuration file
@@ -32,7 +40,12 @@ public class Transport implements EDProtocol {
     /**
      * Weather or not this node is sleeping, hence if it is waiting to connect to other nodes
      */
-    private boolean iddle = true;
+    private boolean idle = true;
+
+    /**
+     * Local node
+     */
+    private Node localNode = null;
 
     /**
      * Left node in the ring. A node with an inferior id
@@ -45,14 +58,11 @@ public class Transport implements EDProtocol {
     private Node right = null;
 
     /**
-     * Local node
-     */
-    private Node localNode = null;
-
-    /**
      * The id of the current node. Randomly generated
      */
     private final UUID id = UUID.randomUUID();
+
+    private final Logger logger = Logger.getLogger("Transport " + id);
 
     public Transport(String prefix) {
         this.prefix = prefix;
@@ -78,6 +88,7 @@ public class Transport implements EDProtocol {
      */
     @Override
     public void processEvent(Node node, int pid, Object event) {
+        logger.info("Received packet: " + event);
         if (event instanceof DiscoveryPacket) this.onDiscoverPacket((DiscoveryPacket) event);
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
@@ -87,10 +98,10 @@ public class Transport implements EDProtocol {
 
     /**
      * A new message is received
-     * @param event
+     * @param packet the packet received
      */
-    private void onMessagePacket(MessagePacket event) {
-        System.out.println(event.message);
+    private void onMessagePacket(MessagePacket packet) {
+        System.out.println(packet.getMessage());
     }
 
     /**
@@ -98,7 +109,7 @@ public class Transport implements EDProtocol {
      * @param packet the packet received
      */
     private void onDiscoverPacket(DiscoveryPacket packet) {
-        Node newNode = Network.get(packet.address);
+        Node newNode = Network.get(packet.getAddress());
 
         // are we the initial node?
         if (this.left.equals(this.right) && getNodeId(this.left).equals(this.id)) {
@@ -106,18 +117,17 @@ public class Transport implements EDProtocol {
             this.send(welcomePacket, newNode);
             this.right = newNode;
             this.left = newNode;
-            System.out.println("NE DEVRAIT APPARAITRE QU UNE FOIS !!!!");
-
+            logger.log(Level.INFO, "Joining {} to form a ring of size 2", packet.getAddress());
         }
 
-        if (packet.nodeId.compareTo(this.id) > 0) { // packet.nodeId > this.id
+        else if (packet.getNodeId().compareTo(this.id) > 0) { // packet.nodeId > this.id
             // the sender has a greater id than the local node
             // should be on the right
             UUID rightId = getNodeId(this.right);
 
             if (
                     // the node is inferior to our right node
-                    packet.nodeId.compareTo(rightId) < 0 // packet.nodeId < rightId
+                    packet.getNodeId().compareTo(rightId) < 0 // packet.nodeId < rightId
                     // Our right node is inferior than the current node. We are the last node in the ring and the new node
                     // is greater than the local node. We add the node at the end of the ring
                     || this.id.compareTo(rightId) > 0 // this.id > rightId
@@ -129,7 +139,7 @@ public class Transport implements EDProtocol {
                 this.send(welcomePacket, newNode);
 
                 // Notify the right node that his left node has changed
-                SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(LEFT, packet.address);
+                SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(LEFT, packet.getAddress());
                 this.send(switchNeighbor, this.right);
                 this.right = newNode;
             } else {
@@ -137,14 +147,16 @@ public class Transport implements EDProtocol {
                 // we follow the packet to the next node in the ring
                 this.send(packet, this.right);
             }
-        } else {
+        }
+
+        else {
             // the send has an inferior id than the local node
             // should be on the left
             UUID leftId = getNodeId(this.left);
 
             if(
                     // the node is greater than the left node
-                    packet.nodeId.compareTo(leftId) > 0 // packet.nodeIf > leftId
+                    packet.getNodeId().compareTo(leftId) > 0 // packet.nodeIf > leftId
                     // Our left node is greater than the current node. We are the first node in the ring and the new node
                     // is less than the local node. We add the node at the beginning of the ring
                     || this.id.compareTo(leftId) < 0 // this.id < leftId
@@ -153,12 +165,12 @@ public class Transport implements EDProtocol {
 
                 // send back neighbors address to the node that joined the cluster
                 WelcomePacket welcomePacket = new WelcomePacket(this.left.getIndex(), this.localNode.getIndex());
-                this.send(welcomePacket, Network.get(packet.address));
+                this.send(welcomePacket, Network.get(packet.getAddress()));
 
                 // Notify the left node that his right node has changed
-                SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(RIGHT, packet.address);
+                SwitchNeighborPacket switchNeighbor = new SwitchNeighborPacket(RIGHT, packet.getAddress());
                 this.send(switchNeighbor, this.left);
-                this.left = Network.get(packet.address);
+                this.left = Network.get(packet.getAddress());
             } else {
                 // the node should be placed after the left node
                 // we follow the packet to the next node in the ring
@@ -174,7 +186,7 @@ public class Transport implements EDProtocol {
     private void onWelcomePacket(WelcomePacket packet) {
         this.left = Network.get(packet.left);
         this.right = Network.get(packet.right);
-        this.iddle = false;
+        this.idle = false;
         System.out.println("The new left node is : "+left);
         System.out.println("The new right node is : "+right);
     }
@@ -184,8 +196,8 @@ public class Transport implements EDProtocol {
      * @param packet the packet received
      */
     private void onSwitchNeighborPacket(SwitchNeighborPacket packet) {
-        if (packet.left) this.left = Network.get(packet.address);
-        else this.right = Network.get(packet.address);
+        if (packet.isLeft()) this.left = Network.get(packet.getAddress());
+        else this.right = Network.get(packet.getAddress());
     }
 
     /**
@@ -206,19 +218,20 @@ public class Transport implements EDProtocol {
         this.localNode = localNode;
         this.left = localNode;
         this.right = localNode;
-        this.iddle = false;
-    }
-
-    public UUID getId() {
-        return this.id;
-    }
-
-    public boolean isIddle() {
-        return this.iddle;
+        this.idle = false;
     }
 
     @Override
     public Object clone() {
         return new Transport(this.prefix);
+    }
+
+    public String toString() {
+        return "Transport(" +
+                "idle=" + this.isIdle() + ", " +
+                "localNode=" + (this.getLocalNode() == null ? "null" : this.localNode.getIndex()) + ", " +
+                "left=" + (this.isIdle() ? "null" : this.getLeft().getIndex()) + ", " +
+                "right=" + (this.isIdle() ? "null" : this.getRight().getIndex()) + ", " +
+                "id=" + this.getId() + ")";
     }
 }

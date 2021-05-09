@@ -20,6 +20,8 @@ repositories {
 dependencies {
     implementation files('libs/jep-2.3.0.jar')
     implementation files('libs/djep-1.0.0.jar')
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
 }
 
 sourceSets {

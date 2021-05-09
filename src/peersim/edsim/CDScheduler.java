@@ -19,6 +19,7 @@
 package peersim.edsim;
 
 import peersim.core.*;
+import peersim.cdsim.CDProtocol;
 import peersim.config.*;
 import peersim.dynamics.NodeInitializer;
 
