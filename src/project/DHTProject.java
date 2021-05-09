@@ -5,6 +5,7 @@ import peersim.core.Control;
 import peersim.core.GeneralNode;
 import peersim.core.Network;
 import peersim.core.Node;
+import project.protocol.MessagePacket;
 
 import java.util.stream.IntStream;
 
@@ -56,11 +57,15 @@ public class DHTProject implements Control {
         for (int i = 1; i < 10; i++){
             Node dest = new GeneralNode("protocol.transport project.Transport");
             Network.add(dest);
+
+            //ENZO send a MessagePacket (etape 2)
+            Transport transport = (Transport) dest.getProtocol(TRANSPORT_PID);
+            transport.send(new MessagePacket("Bonjour je suis nouveau dans le cercle :) "), initialNode);
         }
 
 
         // Sequentially awake other nodes
-        for (int i = 1; i < Network.size(); i++) { 
+        for (int i = 1; i < Network.size(); i++) {
             System.out.println("Waking up node " + i);
            
             Node node = Network.get(i);

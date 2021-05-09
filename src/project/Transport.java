@@ -5,10 +5,7 @@ import peersim.core.Network;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.edsim.EDSimulator;
-import project.protocol.DiscoveryPacket;
-import project.protocol.SwitchNeighborPacket;
-import project.protocol.WelcomePacket;
-import project.protocol.Packet;
+import project.protocol.*;
 
 import java.util.UUID;
 
@@ -84,7 +81,16 @@ public class Transport implements EDProtocol {
         if (event instanceof DiscoveryPacket) this.onDiscoverPacket((DiscoveryPacket) event);
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
+        else if (event instanceof MessagePacket) this.onMessagePacket((MessagePacket) event);
         else throw new IllegalArgumentException("Event not recognized: " + event);
+    }
+
+    /**
+     * A new message is received
+     * @param event
+     */
+    private void onMessagePacket(MessagePacket event) {
+        System.out.println(event.message);
     }
 
     /**
@@ -100,6 +106,8 @@ public class Transport implements EDProtocol {
             this.send(welcomePacket, newNode);
             this.right = newNode;
             this.left = newNode;
+            System.out.println("NE DEVRAIT APPARAITRE QU UNE FOIS !!!!");
+
         }
 
         if (packet.nodeId.compareTo(this.id) > 0) { // packet.nodeId > this.id
