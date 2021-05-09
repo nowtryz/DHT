@@ -1,8 +1,7 @@
-package project;
+package project.protocol;
 
 
 import lombok.Value;
-import project.protocol.Packet;
 
 public interface DataPacket extends Packet {
 
