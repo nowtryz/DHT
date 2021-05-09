@@ -2,6 +2,7 @@ package project;
 
 import peersim.config.Configuration;
 import peersim.core.Control;
+import peersim.core.GeneralNode;
 import peersim.core.Network;
 import peersim.core.Node;
 
@@ -38,23 +39,30 @@ public class DHTProject implements Control {
     public boolean execute() {
         System.out.println("Starting simulation");
 
-        /*
+        
         if (Network.size() > 1) {
             // We want to network to have at least a size of 2 in order to only wake up the first node.
             // Other nodes will be added later on
             throw new IllegalStateException("The initial size of the network must be 1");
-        }*/
+        }
 
         // Initialize the ring by waking up the first node
         System.out.println("Initializing first node");
         Node initialNode = Network.get(0);
         Transport initialTransport = (Transport) initialNode.getProtocol(TRANSPORT_PID);
         initialTransport.awakeAsInitialNode(initialNode);
+        
+        //ENZO adding up other nodes
+        for (int i = 1; i < 10; i++){
+            Node dest = new GeneralNode("protocol.transport project.Transport");
+            Network.add(dest);
+        }
+
 
         // Sequentially awake other nodes
         for (int i = 1; i < Network.size(); i++) { 
-            //ENZO ici on ne rentre jamais car plus haut on lève une exception si le Network.size > 1
             System.out.println("Waking up node " + i);
+           
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
             transport.awake(node);
