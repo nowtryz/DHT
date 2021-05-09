@@ -41,10 +41,9 @@ public class DHTProject implements Control {
         System.out.println("Starting simulation");
 
         
-        if (Network.size() > 1) {
+        if (Network.size() < 2) {
             // We want to network to have at least a size of 2 in order to only wake up the first node.
-            // Other nodes will be added later on
-            throw new IllegalStateException("The initial size of the network must be 1");
+            throw new IllegalStateException("The size of the network must be greater than 2");
         }
 
         // Initialize the ring by waking up the first node
@@ -52,17 +51,6 @@ public class DHTProject implements Control {
         Node initialNode = Network.get(0);
         Transport initialTransport = (Transport) initialNode.getProtocol(TRANSPORT_PID);
         initialTransport.awakeAsInitialNode(initialNode);
-        
-        //ENZO adding up other nodes
-        for (int i = 1; i < 10; i++){
-            Node dest = new GeneralNode("protocol.transport project.Transport");
-            Network.add(dest);
-
-            //ENZO send a MessagePacket (etape 2)
-            Transport transport = (Transport) dest.getProtocol(TRANSPORT_PID);
-            transport.send(new MessagePacket("Bonjour je suis nouveau dans le cercle :) "), initialNode);
-        }
-
 
         // Sequentially awake other nodes
         for (int i = 1; i < Network.size(); i++) {
@@ -71,6 +59,7 @@ public class DHTProject implements Control {
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
             transport.awake(node);
+            //transport.send(new MessagePacket("Bonjour"), initialNode);
         }
 
 
