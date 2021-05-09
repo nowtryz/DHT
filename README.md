@@ -13,11 +13,11 @@ Dans la couche transport nous utilisons un recepteur d'évenement qui va redirig
 ## Les différents protocoles
 Pour clarifier cela nous utilisons plusieurs protocoles qui héritent tous de de l'interface Packet :
 
-- DiscoveryPacket
+- **DiscoveryPacket**
 > Ce protocole est utilisé lorsqu'un noeud sort de son sommeil. Celui-ci va se propager dans cercle jusqu'à trouver l'emplacement de son émetteur.
-- WelcomePacket
+- **WelcomePacket**
 > Le WelcomePacket est envoyé à un nouveau entrant dans le cercle pour lui présenter ses voisins.
-- SwitchingNeighborPacket 
+- **SwitchingNeighborPacket** 
 > Et enfin ce protocole est utilisé pour avertir un noeud qu'il va changer de voisin (que ce soit pour une entré de noeud ou pour le départ d'un d'entre eux). 
 
 Voici deux dessins pour rendre ca plus visuel. Le premier montre comment un noeud rentre dans le network alors que le deuxième montre comment il en sort : 
@@ -25,6 +25,13 @@ Voici deux dessins pour rendre ca plus visuel. Le premier montre comment un noeu
 ![Entree dans le network](img/entree.png)
 
 ![Sortie dans le network](img/sortie.png)
+
+# Étape 2 : Send/Receive
+Pour cette partie nous avons créer un nouveau protocole : 
+
+- **MessagePacket**
+
+Celui-ci est utilisé pour faire transiter un objet d'un noeud émetteur à un noeud receveur. 
 
 
 # Les outils utilisés 

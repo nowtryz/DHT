@@ -28,6 +28,6 @@ public interface Packet {
 
     @Value
     class MessagePacket implements Packet {
-        String message;
+        Object message;
     }
 }
