@@ -54,19 +54,8 @@ public class DHTProject implements Control {
         Transport initialTransport = (Transport) initialNode.getProtocol(TRANSPORT_PID);
         initialTransport.awakeAsInitialNode(initialNode);
 
-        NodeController nc = new NodeController();
-        // Sequentially awake other nodes
-        for (int i = 1; i < Network.size(); i++) {
-            Node node = Network.get(i);
-            Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
-            nc.addNodeToNetwork(node,transport);
-        }
-
         // Data creation
         DataPacket dp = new DataPacket.Data(5);
-
-
-
 
         log.info("Done");
 
