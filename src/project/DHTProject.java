@@ -5,8 +5,9 @@ import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
+import peersim.edsim.EDSimulator;
 import project.protocol.DataPacket;
-
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 @Slf4j(topic = "Initializer")
@@ -53,15 +54,12 @@ public class DHTProject implements Control {
         Transport initialTransport = (Transport) initialNode.getProtocol(TRANSPORT_PID);
         initialTransport.awakeAsInitialNode(initialNode);
 
+        NodeController nc = new NodeController();
         // Sequentially awake other nodes
         for (int i = 1; i < Network.size(); i++) {
-            log.info("Waking up node " + i);
-
             Node node = Network.get(i);
             Transport transport = (Transport) node.getProtocol(TRANSPORT_PID);
-            transport.awake(node);
-            //transport.send(new Packet.MessagePacket("Bonjour"), initialNode);
-            log.info("bootstrapped " + transport);
+            nc.addNodeToNetwork(node,transport);
         }
 
         // Data creation
