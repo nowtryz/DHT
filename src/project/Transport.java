@@ -243,9 +243,14 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         this.localNode = localNode;
         this.updateLogger();
 
-        this.logger.debug("Starting discovery, waiting for neighbors");
         Node target = DHTProject.getRandomAwakenNode();
         Packet packet = new DiscoveryPacket(localNode.getIndex(), this.id);
+
+        this.logger.debug(
+                "Starting discovery, contacting node {} ({}) and waiting for response",
+                target.getIndex(), getNodeId(target)
+        );
+
         this.send(target, packet);
     }
 
@@ -260,6 +265,23 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         this.updateLogger();
 
         this.logger.info("Awaken as initial node");
+    }
+
+    /**
+     * Leave the ring and notify the its left and right neighbors that their respective right and left neighbor have
+     * change
+     */
+    public void leave() {
+        if (this.idle) throw new IllegalStateException("Cannot leave as the node is not part of the ring");
+        this.logger.info("Leaving the ring (notifying neighbors)");
+
+        this.idle = true;
+        SwitchNeighborPacket leftSwitch = new SwitchNeighborPacket(RIGHT, this.right.getIndex());
+        SwitchNeighborPacket rightSwitch = new SwitchNeighborPacket(LEFT, this.left.getIndex());
+        this.send(this.left, leftSwitch);
+        this.send(this.right, rightSwitch);
+        this.left = null;
+        this.right = null;
     }
 
     private void updateLogger() {
