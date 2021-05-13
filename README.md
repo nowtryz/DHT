@@ -25,8 +25,8 @@ Dans la couche transport nous utilisons un recepteur d'évenement qui va
 rediriger les différents protocoles dans les bonnes méthodes. 
 C'est aussi grâce à cette couche que nos noeuds peuvent communiquer.
 
-## Les différents protocoles
-Pour clarifier cela nous utilisons plusieurs protocoles qui héritent tous 
+## Les différents packets
+Pour clarifier cela nous utilisons plusieurs types de packets qui héritent tous 
 de de l'interface Packet :
 
 - **DiscoveryPacket**
@@ -47,7 +47,7 @@ noeud rentre dans le network alors que le deuxième montre comment il en sort :
 ![Sortie dans le network](img/sortie.png)
 
 # Étape 2 : Send/Receive
-Pour cette partie nous avons créer un nouveau protocole : 
+Pour cette partie nous avons créer un nouveau type de packet : 
 
 - **RoutablePacket**
 
@@ -66,13 +66,28 @@ Si la target n'est pas dans le network alors le noeud qui detecte cette
 
 ![Erreur sur envoie d'un message](img/errMessage.png)
 
+# Étape 3 : Put/Get 
+Cette partie est un peu plus complexe. En effet nous avons fait une deuxième couche 
+applicative qui constituera notre hashtable.
+
+Pour cela nous avons donc créer le type de packet suivant : **ApplicationPacket** qui sera à 
+destination de la couche applicative.
+
+Si l'on souhaite envoyer un ApplicationPacket sur un autre noeud on passe alors d'abord par 
+un RoutablePacket puis lorsque l'on est sur le bon noeud on peut envoyer l'ApplicationPacket sur 
+la couche applicative.  
+
+Les Put et Get eux se propagent de la même manière qu'un packet Discovery à la différence que 
+ceux-ci utilisent le hash au lieu du UUID. 
+
+
 # Les outils utilisés 
 Dans un premier temps nous utilisions le Makefile pour compiler et tester 
 notre code mais nous nous sommes vite rendu compte que cela n'était pas 
 pratique et que le débug était impossible. Nous avons donc utiliser 
 **Gradle** simplifier cela. 
 
-Toujours dans une optique d'éfficacité nos avons utiliser **Log4J** pour 
+Toujours dans une optique d'éfficacité nos avons utilisé **Log4J** pour 
 avoir des logs propres et utilisables. 
 
 # Résultats avec les logs 
