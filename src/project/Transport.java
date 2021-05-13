@@ -19,6 +19,7 @@ import project.protocol.RoutablePacket.MessagePacket;
 import project.protocol.RoutablePacket.UndeliverableRoutablePacket;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -28,6 +29,7 @@ import static project.protocol.Packet.SwitchNeighborPacket.RIGHT;
 
 @Getter
 public class Transport implements EDProtocol, peersim.transport.Transport {
+    private final Map<UUID, Integer> addressesCache = new HashMap<>();
     /**
      * The prefix of this layer in the configuration file
      */
@@ -62,12 +64,6 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      * Right node in the ring. A node with a greater id
      */
     private Node right = null;
-
-
-    /**
-     * Stocked data on the node
-     */
-    private HashMap<Integer,String> datas = new HashMap<>();
 
     /**
      * The id of the current node. Randomly generated
@@ -115,7 +111,16 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
     public void route(RoutablePacket packet) {
         if (this.isIdle()) throw new IllegalStateException("Node in idle state");
 
-        if (packet.getTarget().compareTo(this.id) > 0) { // packet.target > this.id
+        // cache sender address
+        this.addressesCache.put(packet.getSender(), packet.getSenderAddress());
+
+
+        Integer cachedAddress = this.addressesCache.get(packet.getTarget());
+
+        if (!packet.getTarget().equals(this.id) && cachedAddress != null) {
+            logger.trace("Routing packet directly to {} ({}) (address was cached)", cachedAddress, packet.getTarget());
+            this.send(Network.get(cachedAddress), packet);
+        } else if (packet.getTarget().compareTo(this.id) > 0) { // packet.target > this.id
             // route to right node
             if (packet.getTarget().compareTo(getNodeId(this.right)) < 0) {
                 // the destination node should be placed between us and the right node
@@ -141,7 +146,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
     }
 
     public void sendMessage(UUID target, String message) {
-        this.route(new MessagePacket(this.id, target, message));
+        this.route(new MessagePacket(this.localNode.getIndex(), this.id, target, message));
     }
 
     private void nodeNotFoundWhenRouting(RoutablePacket packet) {
@@ -150,8 +155,10 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
             logger.error("Node {} not found", packet.getTarget());
         } else {
             // route a response to the sender, notifying the node is missing
-            RoutablePacket response = new UndeliverableRoutablePacket(this.id, packet.getSender(), "Node not found", packet);
-            this.route(response);
+            this.route(new UndeliverableRoutablePacket(
+                    this.localNode.getIndex(), this.id,
+                    packet.getSender(), "Node not found", packet
+            ));
         }
     }
 

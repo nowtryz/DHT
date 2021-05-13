@@ -129,6 +129,7 @@ public class HashTable implements EDProtocol {
             Object value = this.storage.get(packet.getKey());
 
             GetResponsePacket response = new GetResponsePacket(
+                    this.node.getLocalNode().getIndex(),
                     this.node.getId(), packet.getSender(),
                     packet.getKey(), value
             );

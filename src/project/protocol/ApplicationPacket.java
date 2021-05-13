@@ -31,6 +31,7 @@ public interface ApplicationPacket extends Packet {
 
     @Value
     class GetResponsePacket implements ApplicationPacket, RoutablePacket {
+        int senderAddress;
         UUID sender;
         UUID target;
         Object key;
