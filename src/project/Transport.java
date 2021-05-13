@@ -9,6 +9,7 @@ import peersim.core.Network;
 import peersim.core.Node;
 import peersim.edsim.EDProtocol;
 import peersim.edsim.EDSimulator;
+import project.protocol.ApplicationPacket;
 import project.protocol.Packet;
 import project.protocol.Packet.DiscoveryPacket;
 import project.protocol.Packet.SwitchNeighborPacket;
@@ -91,8 +92,24 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         EDSimulator.add(getLatency(src, dest), packet, dest, pid);
     }
 
+    /**
+     * Send to application on local node
+     * @param packet the packet to forward
+     */
+    public void sendToApplication(ApplicationPacket packet) {
+        EDSimulator.add(0, packet, this.localNode, this.applicationPid);
+    }
+
     public void send(Node dest, Packet packet) {
         this.send(this.localNode, dest, packet, this.targetPid);
+    }
+
+    public void sendLeft(Packet packet) {
+        this.send(this.left, packet);
+    }
+
+    public void sendRight(Packet packet) {
+        this.send(this.right, packet);
     }
 
     public void route(RoutablePacket packet) {
@@ -115,7 +132,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
                 // hence this node is missing, it may have left the ring
                 this.nodeNotFoundWhenRouting(packet);
             } else {
-                logger.trace("Routing packet to left: {} ({})", this.right.getIndex(), getNodeId(this.right));
+                logger.trace("Routing packet to left: {} ({})", this.left.getIndex(), getNodeId(this.left));
                 this.send(this.left, packet);
             }
         } else {
@@ -151,6 +168,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
         else if (event instanceof RoutablePacket) this.onRoutablePacket((RoutablePacket) event);
+        else if (event instanceof ApplicationPacket) this.sendToApplication((ApplicationPacket) event);
         else throw new IllegalArgumentException("Event not recognized: " + event);
     }
 
@@ -165,6 +183,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
     private void handleRoutablePacket(RoutablePacket packet) {
         if (packet instanceof MessagePacket) this.onMessagePacket((MessagePacket) packet);
         if (packet instanceof UndeliverableRoutablePacket) this.onUndeliverableRoutablePacket((UndeliverableRoutablePacket) packet);
+        if (packet instanceof ApplicationPacket) this.sendToApplication((ApplicationPacket) packet);
     }
 
     private void onMessagePacket(MessagePacket packet) {
@@ -271,6 +290,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         this.idle = false;
         this.logger.debug("Awaken and joined the ring (left={}, right={})", packet.getLeft(), packet.getRight());
         this.logger.debug("The ring has now a size of {}", DHTProject.getAwakenNodesCount());
+        this.sendToApplication(new ApplicationPacket.InitApplication());
     }
 
     /**
@@ -355,9 +375,25 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
     }
 
     public boolean isEdgeNode() {
+        return this.isFirst() || this.isLast();
+    }
+
+    /**
+     * check if our left node has a greater id
+     * @return true if it is the case
+     */
+    public boolean isFirst() {
         checkState(!this.isIdle(), "Node in idle state");
-        // check if our left node has a greater id or if our right node has a smaller id
-        return this.id.compareTo(getNodeId(this.left)) < 0 || this.id.compareTo(getNodeId(this.right)) > 0;
+        return this.id.compareTo(getNodeId(this.left)) < 0;
+    }
+
+    /**
+     * Check if ur right node has a smaller id
+     * @return true if it is the case
+     */
+    public boolean isLast() {
+        checkState(!this.isIdle(), "Node in idle state");
+        return  this.id.compareTo(getNodeId(this.right)) > 0;
     }
 
     @Override

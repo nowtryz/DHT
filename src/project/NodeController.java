@@ -2,6 +2,7 @@ package project;
 
 
 import lombok.extern.slf4j.Slf4j;
+import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
@@ -29,9 +30,12 @@ public class NodeController implements Control {
     private int actionIndex = 0;
 
     private final List<Runnable> actions = new ArrayList<>();
+    private final int hashTableProtocolId;
 
 
-    public NodeController(String ignored) {
+    public NodeController(String prefix) {
+        this.hashTableProtocolId = Configuration.getPid(prefix + ".application");
+
         // action node initialisation actions
         for (int i = 1; i < Network.size(); i++) {
             final int index = i;
@@ -48,6 +52,10 @@ public class NodeController implements Control {
         this.actions.add(() -> sendMessageRandom("Hello world"));
         this.actions.add(() -> sendMessageRandom("Hello universe"));
         this.actions.add(() -> sendMessageRandom("Hello cosmos"));
+
+        // test hash table
+        this.actions.add(() -> put("La clef", "La valeur"));
+        this.actions.add(() -> get("La clef"));
     }
 
     @Override
@@ -106,5 +114,21 @@ public class NodeController implements Control {
 
         Transport transport = getTransport(randomSender);
         transport.sendMessage(getNodeId(randomTarget), message);
+    }
+
+    public void put(Object key, Object value) {
+        log.info("Inserting key/value in the dht: {}/{}", key, value);
+
+        Node node = getRandomAwakenNode();
+        HashTable table = (HashTable) node.getProtocol(this.hashTableProtocolId);
+        table.put(key, value);
+    }
+
+    public void get(Object key) {
+        log.info("Fetching `{}` from the DHT", key);
+
+        Node node = getRandomAwakenNode();
+        HashTable table = (HashTable) node.getProtocol(this.hashTableProtocolId);
+        table.get(key).thenAccept(value -> log.info("For key `{}`, got: {}", key, value));
     }
 }
