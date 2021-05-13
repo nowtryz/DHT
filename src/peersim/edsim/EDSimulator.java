@@ -27,7 +27,7 @@ import peersim.core.*;
 /**
 * Event-driven simulator engine.
 * It is a fully static singleton class.
-* For an event driven simulation 
+* For an event driven simulation
 * the configuration has to describe a set of {@link Protocol}s,
 * a set of {@link Control}s and their ordering and a set of
 * initializers and their ordering. See parameters {@value #PAR_INIT},
@@ -74,7 +74,7 @@ import peersim.core.*;
 * at the cost of some
 * loss in performance.
 * <p>
-* When protocols at different nodes send messages to each other, they might
+* When protocols at different nodes route messages to each other, they might
 * want to use a model of the transport layer so that in the simulation
 * message delay and message omissions can be modeled in a modular way.
 * This functionality is implemented in package {@link peersim.transport}.
@@ -86,14 +86,14 @@ public class EDSimulator
 //---------------------------------------------------------------------
 // Parameters
 //---------------------------------------------------------------------
-	
+
 /**
  * The ending time for simulation. Only events that have a strictly smaller
  * value are executed. It must be positive. Although in principle
  * negative timestamps could be allowed, we assume time will be positive.
  * @config
  */
-public static final String PAR_ENDTIME = "simulation.endtime";	
+public static final String PAR_ENDTIME = "simulation.endtime";
 
 /**
  * This parameter specifies
@@ -105,14 +105,14 @@ public static final String PAR_ENDTIME = "simulation.endtime";
  * simulation progresses and how fast...
  * @config
  */
-private static final String PAR_LOGTIME = "simulation.logtime";	
+private static final String PAR_LOGTIME = "simulation.logtime";
 
-/** 
+/**
  * This parameter specifies the event queue to be used. It must be an
  * implementation of interface {@link PriorityQ}. If it is not defined,
  * the internal implementation is used.
- * @config 
- */	
+ * @config
+ */
 private static final String PAR_PQ = "simulation.eventqueue";
 
 /**
@@ -173,10 +173,10 @@ private EDSimulator() {}
  * Load and run initializers.
  */
 private static void runInitializers() {
-	
+
 	Object[] inits = Configuration.getInstanceArray(PAR_INIT);
 	String names[] = Configuration.getNames(PAR_INIT);
-	
+
 	for(int i=0; i<inits.length; ++i)
 	{
 		System.err.println(
@@ -215,14 +215,14 @@ private static void scheduleControls()
 /**
  * Adds a new event to be scheduled, specifying the number of time units
  * of delay, and the execution order parameter.
- * 
- * @param time 
+ *
+ * @param time
  *   The actual time at which the next event should be scheduled.
  * @param order
  *   The index used to specify the order in which control events
  *   should be executed, if they happen to be at the same time, which is
  *   typically the case.
- * @param event 
+ * @param event
  *   The control event
  */
 static void addControlEvent(long time, int order, ControlEvent event)
@@ -260,7 +260,7 @@ private static boolean executeNext() {
 		" at time "+CommonState.getTime());
 		return true;
 	}
-	
+
 	long time = ev.time;
 	if (time >= nextlog)
 	{
@@ -276,7 +276,7 @@ private static boolean executeNext() {
 		" leaving "+heap.size()+" unprocessed events in the queue");
 		return true;
 	}
-	
+
 	CommonState.setTime(time);
 	int pid = ev.pid;
 	if (ev.node == null)
@@ -309,13 +309,13 @@ private static boolean executeNext() {
 			} catch (ClassCastException e) {
 				e.printStackTrace();
 				throw new IllegalArgumentException("Protocol " +
-					Configuration.lookupPid(pid) + 
+					Configuration.lookupPid(pid) +
 					" does not implement EDProtocol; " + ev.event.getClass()  );
 			}
 			prot.processEvent(ev.node, pid, ev.event);
 		}
 	}
-	
+
 	return false;
 }
 
@@ -326,12 +326,12 @@ private static boolean executeNext() {
 /**
  * Runs an experiment, resetting everything except the random seed.
  */
-public static void nextExperiment() 
+public static void nextExperiment()
 {
 	// Reading parameter
-	if( Configuration.contains(PAR_PQ) ) 
+	if( Configuration.contains(PAR_PQ) )
 		heap = (PriorityQ) Configuration.getInstance(PAR_PQ);
-	else 
+	else
 		heap = new Heap();
 	endtime = Configuration.getLong(PAR_ENDTIME);
 	if( CommonState.getEndTime() < 0 ) // not initialized yet
@@ -376,15 +376,15 @@ public static void nextExperiment()
  * Adds a new event to be scheduled, specifying the number of time units
  * of delay, and the node and the protocol identifier to which the event
  * will be delivered.
- * 
- * @param delay 
+ *
+ * @param delay
  *   The number of time units before the event is scheduled.
  *   Has to be non-negative.
- * @param event 
+ * @param event
  *   The object associated to this event
- * @param node 
+ * @param node
  *   The node associated to the event.
- * @param pid 
+ * @param pid
  *   The identifier of the protocol to which the event will be delivered
  */
 public static void add(long delay, Object event, Node node, int pid)
@@ -393,13 +393,13 @@ public static void add(long delay, Object event, Node node, int pid)
 		throw new IllegalArgumentException("Protocol "+
 			node.getProtocol(pid)+" is trying to add event "+
 			event+" with a negative delay: "+delay);
-	if (pid > Byte.MAX_VALUE) 
+	if (pid > Byte.MAX_VALUE)
 		throw new IllegalArgumentException(
-				"This version does not support more than " 
+				"This version does not support more than "
 				+ Byte.MAX_VALUE + " protocols");
-	
+
 	long time = CommonState.getTime();
-	if( endtime - time > delay ) // check like this to deal with overflow 
+	if( endtime - time > delay ) // check like this to deal with overflow
 		heap.add(time+delay, event, node, (byte) pid);
 }
 

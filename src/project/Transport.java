@@ -11,14 +11,16 @@ import peersim.edsim.EDProtocol;
 import peersim.edsim.EDSimulator;
 import project.protocol.Packet;
 import project.protocol.Packet.DiscoveryPacket;
-import project.protocol.Packet.MessagePacket;
 import project.protocol.Packet.SwitchNeighborPacket;
 import project.protocol.Packet.WelcomePacket;
+import project.protocol.RoutablePacket;
+import project.protocol.RoutablePacket.MessagePacket;
+import project.protocol.RoutablePacket.UndeliverableRoutablePacket;
 
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.logging.Level;
 
+import static com.google.common.base.Preconditions.checkState;
 import static project.Utils.getNodeId;
 import static project.protocol.Packet.SwitchNeighborPacket.LEFT;
 import static project.protocol.Packet.SwitchNeighborPacket.RIGHT;
@@ -31,7 +33,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
     private final String prefix;
 
     /**
-     * The protocol id of the layer to which we should send packets (hence the pid of the current layer)
+     * The protocol id of the layer to which we should route packets (hence the pid of the current layer)
      */
     private final int targetPid;
 
@@ -93,6 +95,49 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         this.send(this.localNode, dest, packet, this.targetPid);
     }
 
+    public void route(RoutablePacket packet) {
+        if (this.isIdle()) throw new IllegalStateException("Node in idle state");
+
+        if (packet.getTarget().compareTo(this.id) > 0) { // packet.target > this.id
+            // route to right node
+            if (packet.getTarget().compareTo(getNodeId(this.right)) < 0) {
+                // the destination node should be placed between us and the right node
+                // hence this node is missing, it may have left the ring
+                this.nodeNotFoundWhenRouting(packet);
+            } else {
+                logger.trace("Routing packet to right: {} ({})", this.right.getIndex(), getNodeId(this.right));
+                this.send(this.right, packet);
+            }
+        } else if (packet.getTarget().compareTo(this.id) < 0) {
+            // route to left node
+            if (packet.getTarget().compareTo(getNodeId(this.left)) > 0) {
+                // the destination node should be placed between us and the left node
+                // hence this node is missing, it may have left the ring
+                this.nodeNotFoundWhenRouting(packet);
+            } else {
+                logger.trace("Routing packet to left: {} ({})", this.right.getIndex(), getNodeId(this.right));
+                this.send(this.left, packet);
+            }
+        } else {
+            this.handleRoutablePacket(packet);
+        }
+    }
+
+    public void sendMessage(UUID target, String message) {
+        this.route(new MessagePacket(this.id, target, message));
+    }
+
+    private void nodeNotFoundWhenRouting(RoutablePacket packet) {
+        if (packet.getSender().equals(this.id)) {
+            // no need to forward an error packet, we just notify the console
+            logger.error("Node {} not found", packet.getTarget());
+        } else {
+            // route a response to the sender, notifying the node is missing
+            RoutablePacket response = new UndeliverableRoutablePacket(this.id, packet.getSender(), "Node not found", packet);
+            this.route(response);
+        }
+    }
+
     /**
      * Packet received
      * @param node the local node
@@ -105,16 +150,29 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         if (event instanceof DiscoveryPacket) this.onDiscoverPacket((DiscoveryPacket) event);
         else if (event instanceof WelcomePacket) this.onWelcomePacket((WelcomePacket) event);
         else if (event instanceof SwitchNeighborPacket) this.onSwitchNeighborPacket((SwitchNeighborPacket) event);
-        else if (event instanceof MessagePacket) this.onMessagePacket((MessagePacket) event);
+        else if (event instanceof RoutablePacket) this.onRoutablePacket((RoutablePacket) event);
         else throw new IllegalArgumentException("Event not recognized: " + event);
     }
 
     /**
-     * A new message is received
+     * A routable packet is received
      * @param packet the packet received
      */
+    private void onRoutablePacket(RoutablePacket packet) {
+        this.route(packet);
+    }
+
+    private void handleRoutablePacket(RoutablePacket packet) {
+        if (packet instanceof MessagePacket) this.onMessagePacket((MessagePacket) packet);
+        if (packet instanceof UndeliverableRoutablePacket) this.onUndeliverableRoutablePacket((UndeliverableRoutablePacket) packet);
+    }
+
     private void onMessagePacket(MessagePacket packet) {
-        System.out.println(packet.getMessage());
+        logger.info("Received a message from {}: {}", packet.getSender(), packet.getMessage());
+    }
+
+    private void onUndeliverableRoutablePacket(UndeliverableRoutablePacket packet) {
+        logger.error("Was not able to deliver a message to {}: {}", packet.getOriginalPacket().getTarget(), packet.getReason());
     }
 
     /**
@@ -146,7 +204,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
             ) {
                 // the node should be placed between the right and the local node
 
-                // send back neighbors address to the node that joined the cluster
+                // send back neighbors addresses to the node that joined the cluster
                 this.logger.debug("Welcoming node {} ({}) as my new right node", packet.getAddress(), packet.getNodeId());
                 WelcomePacket welcomePacket = new WelcomePacket(this.localNode.getIndex(), this.right.getIndex());
                 this.send(newNode, welcomePacket);
@@ -168,20 +226,20 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         }
 
         else {
-            // the send has an inferior id than the local node
+            // the sender has an inferior id than the local node
             // should be on the left
             UUID leftId = getNodeId(this.left);
 
             if(
                     // the node is greater than the left node
-                    packet.getNodeId().compareTo(leftId) > 0 // packet.nodeIf > leftId
+                    packet.getNodeId().compareTo(leftId) > 0 // packet.nodeId > leftId
                     // Our left node is greater than the current node. We are the first node in the ring and the new node
                     // is less than the local node. We add the node at the beginning of the ring
                     || this.id.compareTo(leftId) < 0 // this.id < leftId
             ) {
                 // the node should be placed between the left and the local node
 
-                // send back neighbors address to the node that joined the cluster
+                // send back neighbors addresses to the node that joined the cluster
                 this.logger.debug("Welcoming node {} ({}) as my new left node", packet.getAddress(), packet.getNodeId());
                 WelcomePacket welcomePacket = new WelcomePacket(this.left.getIndex(), this.localNode.getIndex());
                 this.send(newNode, welcomePacket);
@@ -211,7 +269,8 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
         this.left = Network.get(packet.getLeft());
         this.right = Network.get(packet.getRight());
         this.idle = false;
-        this.logger.debug("Awaken and the ring (left={}, right={})", packet.getLeft(), packet.getRight());
+        this.logger.debug("Awaken and joined the ring (left={}, right={})", packet.getLeft(), packet.getRight());
+        this.logger.debug("The ring has now a size of {}", DHTProject.getAwakenNodesCount());
     }
 
     /**
@@ -240,6 +299,8 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      * Called from the initializer to wake up this node and start connecting to other nodes
      */
     public void awake(Node localNode) {
+        checkState(this.isIdle(), "The node is already awaken");
+
         this.localNode = localNode;
         this.updateLogger();
 
@@ -258,6 +319,8 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      * Initialize this as the first node in the ring
      */
     public void awakeAsInitialNode(Node localNode) {
+        checkState(this.isIdle(), "The node is already awaken");
+
         this.localNode = localNode;
         this.left = localNode;
         this.right = localNode;
@@ -272,7 +335,7 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
      * change
      */
     public void leave() {
-        if (this.idle) throw new IllegalStateException("Cannot leave as the node is not part of the ring");
+        checkState(!this.isIdle(), "Cannot leave as the node is not part of the ring");
         this.logger.info("Leaving the ring (notifying neighbors)");
 
         this.idle = true;
@@ -289,6 +352,12 @@ public class Transport implements EDProtocol, peersim.transport.Transport {
                 "Transport %016x (Node %d)",
                 this.id.getMostSignificantBits(), this.localNode.getIndex()
         ));
+    }
+
+    public boolean isEdgeNode() {
+        checkState(!this.isIdle(), "Node in idle state");
+        // check if our left node has a greater id or if our right node has a smaller id
+        return this.id.compareTo(getNodeId(this.left)) < 0 || this.id.compareTo(getNodeId(this.right)) > 0;
     }
 
     @Override

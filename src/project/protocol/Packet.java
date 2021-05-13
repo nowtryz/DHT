@@ -25,9 +25,4 @@ public interface Packet {
         boolean left;
         int address;
     }
-
-    @Value
-    class MessagePacket implements Packet {
-        Object message;
-    }
 }

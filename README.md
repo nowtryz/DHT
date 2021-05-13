@@ -2,6 +2,12 @@
 
 **Le but de ce projet est de concevoir et implémenter une DHT en dessus de PeerSim.**
 
+> Pour lancer le projet, il suffit d'executer :
+> ```shell
+> ./gradlew run
+> ```
+> Ce ci va compiler tout le code et lancer le simuilateur
+
 # Étape 1 : Join/Leave
 Dans un premier temps, la DHT est un simple anneau où chaque noeud connait uniquement ses voisins immédiats. Chaque noeud a un identifiant (aléatoire), les noeuds sont rangés dans l'anneau en fonction de leur identifiant. Pour les identifiants on utilise UUID qui va fournir un ID unique et aléatoire à chaque noeud. 
 Pour faire simple un noeud initial va se réveiller, en suite les autres noeuds du Network vont se réveiller un par un et vont trouver leur place dans le cercle en parcourant de gauche à droite (gauche = plus petit, droite = plus grand). 

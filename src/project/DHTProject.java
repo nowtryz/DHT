@@ -1,13 +1,13 @@
 package project;
 
+import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import peersim.config.Configuration;
 import peersim.core.Control;
 import peersim.core.Network;
 import peersim.core.Node;
-import peersim.edsim.EDSimulator;
-import project.protocol.DataPacket;
-import java.util.concurrent.TimeUnit;
+
+import java.util.Random;
 import java.util.stream.IntStream;
 
 @Slf4j(topic = "Initializer")
@@ -30,13 +30,21 @@ public class DHTProject implements Control {
      * @return a random awaken node
      */
     public static Node getRandomAwakenNode() {
+        Node[] nodes = IntStream.range(0, Network.size())
+                .mapToObj(Network::get)
+                .filter(node -> !((Transport) node.getProtocol(getTransportPid())).isIdle())
+                .toArray(Node[]::new);
+
+        return nodes[new Random().nextInt(nodes.length)];
+    }
+
+    public static long getAwakenNodesCount() {
         return IntStream.range(0, Network.size())
                 .mapToObj(Network::get)
                 .filter(node -> !((Transport) node.getProtocol(getTransportPid())).isIdle())
-                // this should be random
-                .findAny()
-                .orElseThrow(() -> new IllegalStateException("Unable to find any awaken node"));
+                .count();
     }
+
 
     @Override
     public boolean execute() {
@@ -54,11 +62,8 @@ public class DHTProject implements Control {
         Transport initialTransport = (Transport) initialNode.getProtocol(TRANSPORT_PID);
         initialTransport.awakeAsInitialNode(initialNode);
 
-        // Data creation
-        DataPacket dp = new DataPacket.Data(5);
 
         log.info("Done");
-
 
         return false;
     }
