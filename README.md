@@ -94,25 +94,128 @@ avoir des logs propres et utilisables.
 
 # Résultats avec les logs 
 
-Les logs sont découpés en plusieurs actions pour faciliter leur lecture. 
+Les logs sont découpés en plusieurs actions pour faciliter leur lecture (Les logs sont aussi
+colorés dans la console, des screens sont disponibles dans [le dossier img](img).
 
-![Logs insertion noeud dans le network](img/log1.png)
-
-Ici on voit l'initialisation d'un network avec un noeud puis l'ajout de 
+Ici on voit l'initialisation d'un network avec un noeud puis l'ajout de
 deux noeuds dans ce même network (Action 0 et Action 1).
 
-![Logs network final](img/log2.png)
+```prolog
+[20:26:48 INFO ][main] Initializer: Creating initializer init.project
+[20:26:48 INFO ][main] Initializer: Starting simulation
+[20:26:48 INFO ][main] Initializer: Initializing first node
+[20:26:48 INFO ][main] Transport b88c632a1523481c (Node 0): Awaken as initial node
+[20:26:48 INFO ][main] Initializer: Done
+[20:26:48 INFO ][main] Node Controller: ======================== [Action 0] ========================
+[20:26:48 INFO ][main] Node Controller: Waking up node 1
+[20:26:48 DEBUG][main] Transport d69b620e2b3e4bb2 (Node 1): Starting discovery, contacting node 0 (b88c632a-1523-481c-b029-b3f8375b740c) and waiting for response
+[20:26:48 INFO ][main] Node Controller: bootstrapped Transport(idle=true, localNode=1, left=null, right=null, id=d69b620e-2b3e-4bb2-86b5-70392be84e7c)
+[20:26:48 TRACE][main] Transport b88c632a1523481c (Node 0): Received packet: Packet.DiscoveryPacket(address=1, nodeId=d69b620e-2b3e-4bb2-86b5-70392be84e7c)
+[20:26:48 DEBUG][main] Transport b88c632a1523481c (Node 0): Joining 1 to form a ring of size 2
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Received packet: Packet.WelcomePacket(left=0, right=0)
+[20:26:48 DEBUG][main] Transport d69b620e2b3e4bb2 (Node 1): Awaken and joined the ring (left=0, right=0)
+[20:26:48 DEBUG][main] Transport d69b620e2b3e4bb2 (Node 1): The ring has now a size of 2
+[20:26:48 INFO ][main] Node Controller: ======================== [Action 1] ========================
+[20:26:48 INFO ][main] Node Controller: Waking up node 2
+[20:26:48 DEBUG][main] Transport 23ef126592904ccb (Node 2): Starting discovery, contacting node 1 (d69b620e-2b3e-4bb2-86b5-70392be84e7c) and waiting for response
+[20:26:48 INFO ][main] Node Controller: bootstrapped Transport(idle=true, localNode=2, left=null, right=null, id=23ef1265-9290-4ccb-9cd5-9c35c510c8d0)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Received packet: Packet.DiscoveryPacket(address=2, nodeId=23ef1265-9290-4ccb-9cd5-9c35c510c8d0)
+[20:26:48 DEBUG][main] Transport d69b620e2b3e4bb2 (Node 1): Welcoming node 2 (23ef1265-9290-4ccb-9cd5-9c35c510c8d0) as my new right node
+[20:26:48 DEBUG][main] Transport d69b620e2b3e4bb2 (Node 1): Notifying node 0 (b88c632a-1523-481c-b029-b3f8375b740c) of their new left node
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Received packet: Packet.WelcomePacket(left=1, right=0)
+[20:26:48 DEBUG][main] Transport 23ef126592904ccb (Node 2): Awaken and joined the ring (left=1, right=0)
+[20:26:48 DEBUG][main] Transport 23ef126592904ccb (Node 2): The ring has now a size of 3
+[20:26:48 TRACE][main] Transport b88c632a1523481c (Node 0): Received packet: Packet.SwitchNeighborPacket(left=true, address=2)
+[20:26:48 DEBUG][main] Transport b88c632a1523481c (Node 0): Switching left neighbor from 1 to 2
+```
 
 Sur l'action 9 que l'on voit au-dessus le final ring est représenté. 
-On voit que tous les noeuds sont dans le bon ordre d'UUID. 
-**ATTENTION on ne commence pas forcément avec le plus petit, pas grave c'est un cercle :)** .
+On voit que tous les noeuds sont dans le bon ordre d'UUID.
+**ATTENTION on ne commence pas forcément avec le plus petit, pas grave c'est un cercle :).**
 
-![Logs suppression d'un noeud du network](img/log3.png)
+```prolog
+[20:26:48 INFO ][main] Node Controller: Final ring: b88c632a-1523-481c-b029-b3f8375b740c (0) ⇒ cc0cb9bb-0514-460b-b555-f8a60502a379 (3) ⇒ d69b620e-2b3e-4bb2-86b5-70392be84e7c (1) ⇒ e634f2e9-7e42-4b55-a495-083166d7518b (8) ⇒ 23ef1265-9290-4ccb-9cd5-9c35c510c8d0 (2) ⇒ 25900288-e302-43d7-a754-0eeea294a16e (7) ⇒ 2e61642b-cf2c-4a0d-a008-b4f66e1f8859 (5) ⇒ 32070974-0cf8-49cc-ab0a-ed8b9a459c0a (6) ⇒ 4314c08f-70e8-4dbf-8c95-47fe074e8ced (4) ⇒ 8c956f21-dfd1-4412-a8ea-33695adf18ed (9)
+```
 
 Ici on enlève le noeud 0 du ring. 
 
-![Logs envoie d'un message entre 2 noeuds](img/log4.png)
+```prolog
+[20:26:48 INFO ][main] Node Controller: ======================== [Action 10] ========================
+[20:26:48 INFO ][main] Node Controller: Killing node 0
+[20:26:48 INFO ][main] Transport b88c632a1523481c (Node 0): Leaving the ring (notifying neighbors)
+[20:26:48 TRACE][main] Transport 8c956f21dfd14412 (Node 9): Received packet: Packet.SwitchNeighborPacket(left=false, address=3)
+[20:26:48 DEBUG][main] Transport 8c956f21dfd14412 (Node 9): Switching right neighbor from 0 to 3
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Received packet: Packet.SwitchNeighborPacket(left=true, address=9)
+[20:26:48 DEBUG][main] Transport cc0cb9bb0514460b (Node 3): Switching left neighbor from 0 to 9
+```
 
-Et enfin on envoie un message du noeud 7 au noeud 3, on voit que l'ordre de 
+Et enfin on envoie un message du noeud 9 au noeud 6, on voit que l'ordre de 
 routing du packet est bon. On remarque aussi que la suppression à bien fonctionner car 
 initialement le packet aurait dû passer par le noeud 0.
+
+```prolog
+[20:26:48 INFO ][main] Node Controller: ======================== [Action 11] ========================
+[20:26:48 INFO ][main] Node Controller: Sending `Hello world` from 8c956f21-dfd1-4412-a8ea-33695adf18ed (9) to 32070974-0cf8-49cc-ab0a-ed8b9a459c0a (6)
+[20:26:48 TRACE][main] Transport 8c956f21dfd14412 (Node 9): Routing packet to right: 3 (cc0cb9bb-0514-460b-b555-f8a60502a379)
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Routing packet to right: 1 (d69b620e-2b3e-4bb2-86b5-70392be84e7c)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Routing packet to right: 8 (e634f2e9-7e42-4b55-a495-083166d7518b)
+[20:26:48 TRACE][main] Transport e634f2e97e424b55 (Node 8): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 TRACE][main] Transport e634f2e97e424b55 (Node 8): Routing packet to right: 2 (23ef1265-9290-4ccb-9cd5-9c35c510c8d0)
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Routing packet to right: 7 (25900288-e302-43d7-a754-0eeea294a16e)
+[20:26:48 TRACE][main] Transport 25900288e30243d7 (Node 7): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 TRACE][main] Transport 25900288e30243d7 (Node 7): Routing packet to right: 5 (2e61642b-cf2c-4a0d-a008-b4f66e1f8859)
+[20:26:48 TRACE][main] Transport 2e61642bcf2c4a0d (Node 5): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 TRACE][main] Transport 2e61642bcf2c4a0d (Node 5): Routing packet to right: 6 (32070974-0cf8-49cc-ab0a-ed8b9a459c0a)
+[20:26:48 TRACE][main] Transport 320709740cf849cc (Node 6): Received packet: RoutablePacket.MessagePacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, target=32070974-0cf8-49cc-ab0a-ed8b9a459c0a, message=Hello world)
+[20:26:48 INFO ][main] Transport 320709740cf849cc (Node 6): Received a message from 8c956f21-dfd1-4412-a8ea-33695adf18ed: Hello world
+```
+
+Pour la question 3, on voit aussi la suite des packet permettant le PUT et le GET dans la DHT
+
+```prolog
+[20:26:48 INFO ][main] Node Controller: ======================== [Action 14] ========================
+[20:26:48 INFO ][main] Node Controller: Inserting key/value in the dht: La clef/La valeur
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport e634f2e97e424b55 (Node 8): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 25900288e30243d7 (Node 7): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 2e61642bcf2c4a0d (Node 5): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 320709740cf849cc (Node 6): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 4314c08f70e84dbf (Node 4): Received packet: ApplicationPacket.PutPacket(key=La clef, value=La valeur)
+[20:26:48 DEBUG][main] HashTable 4314c08f70e84dbf (Node 4): Stored value for `La clef` (hash: 5bd13e75)
+[20:26:48 TRACE][main] Transport 320709740cf849cc (Node 6): Received packet: ApplicationPacket.ReplicationPacket(key=La clef, value=La valeur)
+[20:26:48 DEBUG][main] HashTable 320709740cf849cc (Node 6): Replicated storage for `La valeur`
+[20:26:48 TRACE][main] Transport 8c956f21dfd14412 (Node 9): Received packet: ApplicationPacket.ReplicationPacket(key=La clef, value=La valeur)
+[20:26:48 DEBUG][main] HashTable 8c956f21dfd14412 (Node 9): Replicated storage for `La valeur`
+[20:26:48 INFO ][main] Node Controller: ======================== [Action 15] ========================
+[20:26:48 INFO ][main] Node Controller: Fetching `La clef` from the DHT
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport e634f2e97e424b55 (Node 8): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport 25900288e30243d7 (Node 7): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport 2e61642bcf2c4a0d (Node 5): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport 320709740cf849cc (Node 6): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport 4314c08f70e84dbf (Node 4): Received packet: ApplicationPacket.GetPacket(sender=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef)
+[20:26:48 TRACE][main] Transport 4314c08f70e84dbf (Node 4): Routing packet to left: 6 (32070974-0cf8-49cc-ab0a-ed8b9a459c0a)
+[20:26:48 TRACE][main] Transport 320709740cf849cc (Node 6): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 320709740cf849cc (Node 6): Routing packet to left: 5 (2e61642b-cf2c-4a0d-a008-b4f66e1f8859)
+[20:26:48 TRACE][main] Transport 2e61642bcf2c4a0d (Node 5): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 2e61642bcf2c4a0d (Node 5): Routing packet to left: 7 (25900288-e302-43d7-a754-0eeea294a16e)
+[20:26:48 TRACE][main] Transport 25900288e30243d7 (Node 7): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 25900288e30243d7 (Node 7): Routing packet to left: 2 (23ef1265-9290-4ccb-9cd5-9c35c510c8d0)
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport 23ef126592904ccb (Node 2): Routing packet to left: 8 (e634f2e9-7e42-4b55-a495-083166d7518b)
+[20:26:48 TRACE][main] Transport e634f2e97e424b55 (Node 8): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport e634f2e97e424b55 (Node 8): Routing packet to left: 1 (d69b620e-2b3e-4bb2-86b5-70392be84e7c)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport d69b620e2b3e4bb2 (Node 1): Routing packet to left: 3 (cc0cb9bb-0514-460b-b555-f8a60502a379)
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 TRACE][main] Transport cc0cb9bb0514460b (Node 3): Routing packet to left: 9 (8c956f21-dfd1-4412-a8ea-33695adf18ed)
+[20:26:48 TRACE][main] Transport 8c956f21dfd14412 (Node 9): Received packet: ApplicationPacket.GetResponsePacket(sender=4314c08f-70e8-4dbf-8c95-47fe074e8ced, target=8c956f21-dfd1-4412-a8ea-33695adf18ed, key=La clef, value=La valeur)
+[20:26:48 INFO ][main] Node Controller: For key `La clef`, got: La valeur
+```
