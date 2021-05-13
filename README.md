@@ -1,5 +1,7 @@
 # DHT
 
+> Fait par Damien Djomby, Enzo Masson et Théo Bernardin
+
 **Le but de ce projet est de concevoir et implémenter une DHT en dessus de PeerSim.**
 
 > Pour lancer le projet, il suffit d'executer :
