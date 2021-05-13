@@ -21,13 +21,13 @@ droite = plus grand).
 
 
 ## Couche transport
-Dans la couche transport nous utilisons un recepteur d'évenement qui va 
+Dans la couche transport nous utilisons un récepteur d'évenement qui va 
 rediriger les différents protocoles dans les bonnes méthodes. 
 C'est aussi grâce à cette couche que nos noeuds peuvent communiquer.
 
 ## Les différents packets
 Pour clarifier cela nous utilisons plusieurs types de packets qui héritent tous 
-de de l'interface Packet :
+de l'interface Packet :
 
 - **DiscoveryPacket**
 > Ce protocole est utilisé lorsqu'un noeud sort de son sommeil. Celui-ci va 
@@ -39,7 +39,7 @@ de de l'interface Packet :
 > Et enfin ce protocole est utilisé pour avertir un noeud qu'il va changer de 
 > voisin (que ce soit pour une entré de noeud ou pour le départ d'un d'entre eux). 
 
-Voici deux dessins pour rendre ca plus visuel. Le premier montre comment un 
+Voici deux dessins pour rendre ça plus visuel. Le premier montre comment un 
 noeud rentre dans le network alors que le deuxième montre comment il en sort : 
 
 ![Entree dans le network](img/entree.png)
@@ -51,7 +51,7 @@ Pour cette partie nous avons créer un nouveau type de packet :
 
 - **RoutablePacket**
 
-Celui-ci est divisé en 2 parties  : 
+Celui-ci est divisé en 2 parties : 
 
 - MessagePacket
 
@@ -59,7 +59,7 @@ Celui-ci est divisé en 2 parties  :
 
 Le premier est le message qui sera délivré à la target, celui-ci parcourt 
 le cercle à la même manière qu'un DiscoveryPacket. 
-Si la target n'est pas dans le network alors le noeud qui detecte cette 
+Si la target n'est pas dans le network alors le noeud qui détecte cette 
 'anomalie' va retourner un UndeliverableRoutablePacket au noeud sender.
 
 ![Envoie d'un messsage](img/envoieMessage.png)
@@ -84,10 +84,10 @@ ceux-ci utilisent le hash au lieu du UUID.
 # Les outils utilisés 
 Dans un premier temps nous utilisions le Makefile pour compiler et tester 
 notre code mais nous nous sommes vite rendu compte que cela n'était pas 
-pratique et que le débug était impossible. Nous avons donc utiliser 
+pratique et que le debug était impossible. Nous avons donc utiliser 
 **Gradle** simplifier cela. 
 
-Toujours dans une optique d'éfficacité nos avons utilisé **Log4J** pour 
+Toujours dans une optique d'efficacité nous avons utilisé **Log4J** pour 
 avoir des logs propres et utilisables. 
 
 # Résultats avec les logs 
@@ -101,7 +101,7 @@ deux noeuds dans ce même network (Action 0 et Action 1).
 
 ![Logs network final](img/log2.png)
 
-Sur l'action 9 que l'on voit au dessus le final ring est représenté. 
+Sur l'action 9 que l'on voit au-dessus le final ring est représenté. 
 On voit que tous les noeuds sont dans le bon ordre d'UUID. 
 **ATTENTION on ne commence pas forcément avec le plus petit, pas grave c'est un cercle :)** .
 
@@ -112,5 +112,5 @@ Ici on enlève le noeud 0 du ring.
 ![Logs envoie d'un message entre 2 noeuds](img/log4.png)
 
 Et enfin on envoie un message du noeud 7 au noeud 3, on voit que l'ordre de 
-routing du packet est bon. On remarque aussi que la supression à bien fonctionner car 
-initialement le packet aurait du passer par le noeud 0.
+routing du packet est bon. On remarque aussi que la suppression à bien fonctionner car 
+initialement le packet aurait dû passer par le noeud 0.
