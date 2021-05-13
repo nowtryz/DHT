@@ -90,7 +90,7 @@ public class NodeController implements Control {
 
         String idsString = nodes.stream()
                 .map(transport -> String.format("%s (%s)", transport.getId(), transport.getLocalNode().getIndex()))
-                .collect(Collectors.joining(" ⇒ "));
+                .collect(Collectors.joining(" => "));
         log.info("Final ring: {}", idsString);
     }
 
